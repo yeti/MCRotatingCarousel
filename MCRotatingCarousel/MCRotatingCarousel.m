@@ -18,6 +18,7 @@
 @property (assign) NSInteger zIndex;
 @property (assign) CGFloat scale;
 @property (assign) CGFloat xTranslation;
+@property (assign) CGFloat alpha;
 
 @end
 
@@ -70,6 +71,7 @@
         self.pageControl.hidesForSinglePage = YES;
         
         [self addSubview:self.pageControl];
+      
     }
     return self;
 }
@@ -119,9 +121,20 @@
                     withVelocity:(CGPoint)velocity
              targetContentOffset:(inout CGPoint *)targetContentOffset
 {
+  
+  float widthIncrement = 0.0;
+  
+  if(velocity.x < -0.5){
+    widthIncrement = 0-(scrollView.bounds.size.width*self.scrollScale);
+  } else if (velocity.x > 0.5){
+    widthIncrement = (scrollView.bounds.size.width*self.scrollScale);
+  }
+  
+  
     //This is the index of the "page" that we will be landing at
-    NSUInteger nearestIndex = roundf(targetContentOffset->x / (scrollView.bounds.size.width*self.scrollScale));
-    
+    NSUInteger nearestIndex = roundf((scrollView.contentOffset.x + widthIncrement) / (scrollView.bounds.size.width*self.scrollScale));
+  
+  
     //This is the actual x position in the scroll view
     CGFloat xOffset = nearestIndex * scrollView.bounds.size.width * self.scrollScale;
     
@@ -224,24 +237,28 @@
             attribs.xTranslation =  -1*self.sideOffset*self.percentFromLeftToCenter;
             attribs.zIndex = 2;
             attribs.scale = self.originScale + (self.percentFromLeftToCenter * (self.sideScale - self.originScale));
+            attribs.alpha = 0.2;
             break;
         case 0: //Between "left" and center
             attribs.shouldShow = YES;
             attribs.xTranslation = -1*self.sideOffset*self.percentFromCenterToRight;
             attribs.zIndex = roundf(3 + self.percentFromLeftToCenter);
             attribs.scale = self.sideScale + (self.percentFromLeftToCenter * (1 - self.sideScale));
+            attribs.alpha = 1.0-self.percentFromCenterToRight;
             break;
         case 1: //Between "right" and center
             attribs.shouldShow = YES;
             attribs.xTranslation = self.sideOffset*self.percentFromLeftToCenter;
             attribs.zIndex = roundf(3 + self.percentFromCenterToRight);
             attribs.scale = self.sideScale + (self.percentFromCenterToRight *(1 - self.sideScale));
+            attribs.alpha = 1.0-self.percentFromLeftToCenter;
             break;
         case 2: //Between "far right" and "right"
             attribs.shouldShow = YES;
             attribs.xTranslation = self.sideOffset*self.percentFromCenterToRight;
             attribs.zIndex = 1;
             attribs.scale = self.originScale + (self.percentFromCenterToRight * (self.sideScale - self.originScale));
+            attribs.alpha = 0.2;
             break;
         default: //Far on the "right" or "left" and not visible.
             attribs.shouldShow = NO;
@@ -271,6 +288,7 @@
     t = CGAffineTransformScale(t, attribs.scale, attribs.scale);
     cell.transform = t;
     cell.tag = attribs.zIndex;
+    cell.alpha = attribs.alpha;
 }
 
 -(UIView*)createViewAtIndex:(NSUInteger)index
